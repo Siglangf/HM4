@@ -25,7 +25,6 @@ def readFactorTable(varnames, probs, outcomesList):
             col = col + [levs[j]] * k
         factorTable[varnames[i]] = col * int(totalfactorTableLength / (k * numLevs))
         k = k * numLevs
-
     return factorTable
 
 ## Build a factorTable from a data frame using frequencies
@@ -43,7 +42,6 @@ def readFactorTablefromData(data, varnames):
 
     lengths = list(map(lambda x: len(x), outcomesList))
     m = reduce(lambda x, y: x * y, lengths)
-   
     factorTable = pd.DataFrame({'probs': np.zeros(m)})
 
     k = 1
@@ -91,13 +89,34 @@ def readFactorTablefromData(data, varnames):
 ## You can assume that the join of two factors is a valid operation.
 ## Hint: You can look up pd.merge for mergin two factors
 def joinFactors(factor1, factor2):
-    #joinedTable = pd.merge(factor1,factor2)
-    #a = factor1.drop('probs',axis=1)
-    #b = factor2.drop('probs',axis=1)
-    #print(pd.merge(a,b,how='outer'))
-
-    return  pd.merge(factor1,factor2,how="outer")
-
+    #check if only common column is 'probs'
+    if len(np.intersect1d(factor1.columns,factor2.columns))==1:
+        #Cartesian product
+        joined = pd.DataFrame()
+        count = 0
+        for i in factor1.index:
+            for j in factor2.index:
+                #calculating probability
+                joined.loc[count,'probs'] = factor1.loc[i,'probs']*factor2.loc[j,'probs']
+                f1column = factor1.columns.tolist()
+                f2column = factor2.columns.tolist()
+                f1column.remove('probs')
+                f2column.remove('probs')
+                for col in f1column:
+                    joined.loc[count,col] = factor1.loc[i,col]
+                for col in f2column:
+                    joined.loc[count,col] = factor2.loc[j,col]
+                count+=1
+        return joined
+        
+    
+    common_elements = np.intersect1d(factor1.columns,factor2.columns).tolist()
+    common_elements.remove('probs')
+        
+    joined = pd.merge(factor1,factor2, how='inner', on=common_elements)
+    joined['probs'] = joined['probs_x'].mul(joined['probs_y'])
+    joined =joined.drop(columns=['probs_x','probs_y'])
+    return joined
 ## Marginalize a variable from a factor
 ## table: a factor table in dataframe
 ## hiddenVar: a string of the hidden variable name to be marginalized
@@ -106,9 +125,14 @@ def joinFactors(factor1, factor2):
 ## Assume that hiddenVar is on the left side of the conditional.
 ## Hint: you can look can pd.groupby
 def marginalizeFactor(factorTable, hiddenVar):
-    # your code 
+    var = factorTable.columns.tolist()
+    var.remove(hiddenVar)
+    var.remove('probs')
+    group = factorTable.groupby(var)
 
-    return []
+    new_table = group['probs'].agg(np.sum).reset_index()
+
+    return new_table
 
 ## Marginalize a list of variables 
 ## bayesnet: a list of factor tables and each table iin dataframe type
@@ -117,9 +141,28 @@ def marginalizeFactor(factorTable, hiddenVar):
 ## Should return a Bayesian network containing a list of factor tables that results
 ## when the list of variables in hiddenVar is marginalized out of bayesnet.
 def marginalizeNetworkVariables(bayesNet, hiddenVar):
-    # your code 
-
-    return []
+    for hVar in hiddenVar:
+        joining_tables = []
+        delete_table = []
+        for i in range(len(bayesNet)):
+            if hVar in bayesNet[i].columns:
+                joining_tables.append(bayesNet[i])
+                delete_table.append(i)
+        if len(joining_tables)>0:    
+            while len(joining_tables)>1:
+                joining_tables[0] = joinFactors(joining_tables[0],joining_tables[1])
+                del joining_tables[1]
+            
+            temp_bayesNet = []
+            for i in range(len(bayesNet)):
+                if i not in delete_table:
+                    temp_bayesNet.append(bayesNet[i])
+            bayesNet = temp_bayesNet
+            joining_tables[0] = marginalizeFactor(joining_tables[0],hVar)
+            bayesNet.append(joining_tables[0])
+        
+        #print(bayesNet)         
+    return bayesNet
 
 ## Update BayesNet for a set of evidence variables
 ## bayesNet: a list of factor and factor tables in dataframe format
@@ -129,9 +172,14 @@ def marginalizeNetworkVariables(bayesNet, hiddenVar):
 ## Set the values of the evidence variables. Other values for the variables
 ## should be removed from the tables. You do not need to normalize the factors
 def evidenceUpdateNet(bayesNet, evidenceVars, evidenceVals):
-    # your code 
+    for i in range(len(bayesNet)):
+        for j in range(len(evidenceVars)):
+            if evidenceVars[j] in bayesNet[i].columns:
+                #print(evidenceVars,evidenceVals)
+                bayesNet[i] = bayesNet[i][bayesNet[i][evidenceVars[j]]==evidenceVals[j]]
+                #bayesNet[i] = bayesNet
 
-    return []
+    return bayesNet
 
 
 ## Run inference on a Bayesian network
@@ -150,9 +198,30 @@ def evidenceUpdateNet(bayesNet, evidenceVars, evidenceVals):
 ## appear in the table with all of their possible values. The probabilities
 ## should be normalized to sum to one.
 def inference(bayesNet, hiddenVar, evidenceVars, evidenceVals):
-    # your code 
-  
-    return []
+    bayesNet = bayesNet.copy()
+    for net in bayesNet:
+        print(net)
+
+    bayesNet = evidenceUpdateNet(bayesNet,evidenceVars,evidenceVals)
+    for net in bayesNet:
+        print(net)
+    bayesNet = marginalizeNetworkVariables(bayesNet,hiddenVar)
+    for net in bayesNet:
+        print(net)
+    while len(bayesNet)>1:
+        bayesNet[0] = joinFactors(bayesNet[0],bayesNet[1])
+        del bayesNet[1]
+    for net in bayesNet:
+        print(net)
+
+    probTable = bayesNet[0]
+    s = probTable['probs'].sum()
+    probTable['probs'] = probTable['probs'].divide(s)
+    
+    
+    print(probTable)
+    return bayesNet
+
 
 
 

@@ -13,28 +13,30 @@ GaugeBF = readFactorTable(['gauge', 'battery', 'fuel'], [0.8, 0.2, 0.2, 0.1, 0.2
 carNet = [BatteryState, FuelState, GaugeBF] # carNet is a list of factors 
 ## Notice that different order of operations give the same answer
 ## (rows/columns may be permuted)
-joinFactors(joinFactors(BatteryState, FuelState), GaugeBF)
+#joinFactors(joinFactors(BatteryState,FuelState), GaugeBF)
 
-joinFactors(joinFactors(GaugeBF, FuelState), BatteryState)
+#joinFactors(joinFactors(GaugeBF, FuelState), BatteryState)
 
-marginalizeFactor(joinFactors(GaugeBF, BatteryState), 'gauge')
-joinFactors(marginalizeFactor(GaugeBF, 'gauge'), BatteryState)
+#marginalizeFactor(joinFactors(GaugeBF, BatteryState), 'gauge')
+#joinFactors(marginalizeFactor(GaugeBF, 'gauge'), BatteryState)
 
-joinFactors(marginalizeFactor(joinFactors(GaugeBF, BatteryState), 'battery'), FuelState)
-marginalizeFactor(joinFactors(joinFactors(GaugeBF, FuelState), BatteryState), 'battery')
+#joinFactors(marginalizeFactor(joinFactors(GaugeBF, BatteryState), 'battery'), FuelState)
+#marginalizeFactor(joinFactors(joinFactors(GaugeBF, FuelState), BatteryState), 'battery')
 
-marginalizeFactor(joinFactors(marginalizeFactor(joinFactors(GaugeBF, BatteryState), 'battery'), FuelState), 'gauge')
-marginalizeFactor(joinFactors(marginalizeFactor(joinFactors(GaugeBF, BatteryState), 'battery'), FuelState), 'fuel')
+#marginalizeFactor(joinFactors(marginalizeFactor(joinFactors(GaugeBF, BatteryState), 'battery'), FuelState), 'gauge')
+#marginalizeFactor(joinFactors(marginalizeFactor(joinFactors(GaugeBF, BatteryState), 'battery'), FuelState), 'fuel')
 
-evidenceUpdateNet(carNet, ['fuel'], [1])
-evidenceUpdateNet(carNet, ['fuel', 'battery'], [1, 0])
+#evidenceUpdateNet(carNet, ['fuel'], [1])
+#evidenceUpdateNet(carNet, ['fuel', 'battery'], [1, 0])
 
 ## Marginalize must first combine all factors involving the variable to
 ## marginalize. Again, this operation may lead to factors that aren't
 ## probabilities.
-marginalizeNetworkVariables(carNet, ['battery']) ## this returns back a list
-marginalizeNetworkVariables(carNet, ['fuel']) ## this returns back a list
-marginalizeNetworkVariables(carNet, ['battery', 'fuel'])
+#marginalizeNetworkVariables(carNet, ['battery']) ## this returns back a list
+#marginalizeNetworkVariables(carNet, ['fuel']) ## this returns back a list
+#marginalizeNetworkVariables(carNet, ['battery', 'fuel'])
+
+print(carNet)
 
 # inference
 print("inference starts")
@@ -47,6 +49,7 @@ print("inference ends")
 #RiskFactor Data Tests
 ###########################################################################
 riskFactorNet = pd.read_csv('RiskFactorsData.csv')
+print(riskFactorNet)
 
 # Create factors
 
