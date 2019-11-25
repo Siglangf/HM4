@@ -145,10 +145,12 @@ def marginalizeNetworkVariables(bayesNet, hiddenVar):
         joining_tables = []
         delete_table = []
         for i in range(len(bayesNet)):
+        #Finds all tables that has the hidden variable in it
             if hVar in bayesNet[i].columns:
                 joining_tables.append(bayesNet[i])
                 delete_table.append(i)
         if len(joining_tables)>0:    
+            #Joins all the tables together until it consist of one dataframe
             while len(joining_tables)>1:
                 joining_tables[0] = joinFactors(joining_tables[0],joining_tables[1])
                 del joining_tables[1]
@@ -199,28 +201,17 @@ def evidenceUpdateNet(bayesNet, evidenceVars, evidenceVals):
 ## should be normalized to sum to one.
 def inference(bayesNet, hiddenVar, evidenceVars, evidenceVals):
     bayesNet = bayesNet.copy()
-    for net in bayesNet:
-        print(net)
-
     bayesNet = evidenceUpdateNet(bayesNet,evidenceVars,evidenceVals)
-    for net in bayesNet:
-        print(net)
     bayesNet = marginalizeNetworkVariables(bayesNet,hiddenVar)
-    for net in bayesNet:
-        print(net)
+
     while len(bayesNet)>1:
         bayesNet[0] = joinFactors(bayesNet[0],bayesNet[1])
         del bayesNet[1]
-    for net in bayesNet:
-        print(net)
 
     probTable = bayesNet[0]
     s = probTable['probs'].sum()
     probTable['probs'] = probTable['probs'].divide(s)
-    
-    
-    print(probTable)
-    return bayesNet
+    return probTable
 
 
 
